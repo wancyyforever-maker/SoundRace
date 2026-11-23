@@ -1,217 +1,210 @@
-{\rtf1\ansi\ansicpg936\cocoartf2822
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
-{\colortbl;\red255\green255\blue255;}
-{\*\expandedcolortbl;;}
-\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+package com.example.soundrace
 
-\f0\fs24 \cf0 package com.example.soundrace\
-\
-import android.Manifest\
-import android.annotation.SuppressLint\
-import android.bluetooth.BluetoothAdapter\
-import android.bluetooth.BluetoothDevice\
-import android.bluetooth.BluetoothManager\
-import android.graphics.Bitmap\
-import android.graphics.Color\
-import android.os.Bundle\
-import android.view.Gravity\
-import android.view.View\
-import android.view.ViewGroup\
-import android.view.WindowManager\
-import android.widget.Button\
-import android.widget.FrameLayout\
-import android.widget.LinearLayout\
-import android.widget.TextView\
-import androidx.activity.ComponentActivity\
-import androidx.activity.result.contract.ActivityResultContracts\
-import kotlinx.coroutines.*\
-\
-class MainActivity : ComponentActivity() \{\
-\
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)\
-    private val bt: BluetoothAdapter by lazy \{\
-        getSystemService(BluetoothManager::class.java).adapter\
-    \}\
-    private val meter by lazy \{ AudioMeter(scope) \}\
-    private lateinit var root: FrameLayout\
-    private var link: BtLink? = null\
-    private val avatars = arrayOfNulls<Bitmap>(2)\
-    private var photoIdx = 0\
-\
-    private val permLauncher = registerForActivityResult(\
-        ActivityResultContracts.RequestMultiplePermissions()\
-    ) \{ showMenu() \}\
-\
-    private val camLauncher = registerForActivityResult(\
-        ActivityResultContracts.TakePicturePreview()\
-    ) \{ bmp ->\
-        avatars[photoIdx] = bmp\
-        photoIdx++\
-        askPhoto()\
-    \}\
-\
-    override fun onCreate(savedInstanceState: Bundle?) \{\
-        super.onCreate(savedInstanceState)\
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)\
-        root = FrameLayout(this).apply \{ setBackgroundColor(0xFF1B1F3B.toInt()) \}\
-        setContentView(root)\
-        permLauncher.launch(\
-            arrayOf(\
-                Manifest.permission.RECORD_AUDIO,\
-                Manifest.permission.CAMERA,\
-                Manifest.permission.BLUETOOTH_CONNECT,\
-                Manifest.permission.BLUETOOTH_SCAN\
-            )\
-        )\
-    \}\
-\
-    override fun onDestroy() \{\
-        meter.stop()\
-        link?.close()\
-        scope.cancel()\
-        super.onDestroy()\
-    \}\
-\
-    // ---------- \uc0\u30028 \u38754 \u24037 \u20855  ----------\
-\
-    private fun label(s: String, size: Float = 18f) = TextView(this).apply \{\
-        text = s\
-        textSize = size\
-        setTextColor(Color.WHITE)\
-        gravity = Gravity.CENTER\
-    \}\
-\
-    private fun btn(s: String, onClick: () -> Unit) = Button(this).apply \{\
-        text = s\
-        setOnClickListener \{ onClick() \}\
-    \}\
-\
-    private fun show(v: View) \{\
-        root.removeAllViews()\
-        root.addView(v, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))\
-    \}\
-\
-    private fun page(vararg views: View) \{\
-        val col = LinearLayout(this).apply \{\
-            orientation = LinearLayout.VERTICAL\
-            gravity = Gravity.CENTER\
-            setPadding(48, 32, 48, 32)\
-        \}\
-        views.forEach \{\
-            col.addView(\
-                it,\
-                LinearLayout.LayoutParams(\
-                    ViewGroup.LayoutParams.WRAP_CONTENT,\
-                    ViewGroup.LayoutParams.WRAP_CONTENT\
-                ).apply \{ setMargins(0, 10, 0, 10) \}\
-            )\
-        \}\
-        show(col)\
-    \}\
-\
-    // ---------- \uc0\u33756 \u21333  ----------\
-\
-    private fun showMenu() \{\
-        link?.close()\
-        link = null\
-        meter.stop()\
-        page(\
-            label("\uc0\u55356 \u57281  \u22768 \u28010 \u31454 \u36895 ", 30f),\
-            label("\uc0\u22823 \u22768 \u21898 \u65292 \u35753 \u20320 \u30340 \u22836 \u20687 \u20914 \u36807 \u32456 \u28857 \u65281 ", 16f),\
-            btn("\uc0\u55356 \u57262  \u25105 \u26159 \u20027 \u26426 \u65288 \u23631 \u24149  + \u29609 \u23478 1\u65289 ") \{ hostFlow() \},\
-            btn("\uc0\u55356 \u57252  \u25105 \u26159 \u40614 \u20811 \u39118 \u31471 \u65288 \u29609 \u23478 2\u65289 ") \{ companionFlow() \}\
-        )\
-    \}\
-\
-    // ---------- \uc0\u20027 \u26426  ----------\
-\
-    private fun hostFlow() \{\
-        avatars.fill(null)\
-        photoIdx = 0\
-        askPhoto()\
-    \}\
-\
-    private fun askPhoto() \{\
-        if (photoIdx >= 2) \{\
-            hostWait()\
-            return\
-        \}\
-        page(\
-            label("\uc0\u25293 \u25668 \u29609 \u23478 $\{photoIdx + 1\}\u30340 \u22836 \u20687 ", 20f),\
-            btn("\uc0\u55357 \u56567  \u25293 \u29031 ") \{ camLauncher.launch(null) \},\
-            btn("\uc0\u36339 \u36807 \u65288 \u20351 \u29992 \u40664 \u35748 \u22836 \u20687 \u65289 ") \{ photoIdx++; askPhoto() \}\
-        )\
-    \}\
-\
-    private fun hostWait() \{\
-        val status = label("\uc0\u31561 \u24453 \u29609 \u23478 2\u30340 \u40614 \u20811 \u39118 \u31471 \u36830 \u25509 \'85")\
-        val l = BtLink(bt).also \{ link = it \}\
-        l.onStatus = \{ msg -> runOnUiThread \{ status.text = msg \} \}\
-        page(\
-            label("\uc0\u55356 \u57262  \u20027 \u26426 \u65288 \u29609 \u23478 1 = \u26412 \u26426 \u40614 \u20811 \u39118 \u65289 ", 20f),\
-            status,\
-            label("\uc0\u26410 \u36830 \u25509 \u29609 \u23478 2\u26102 \u65292 \u29609 \u23478 2\u30340 \u36187 \u36947 \u20445 \u25345 \u38745 \u27490 ", 14f),\
-            btn("\uc0\u9654  \u24320 \u22987 \u31454 \u36895 ") \{ startRace() \},\
-            btn("\uc0\u36820 \u22238 ") \{ showMenu() \}\
-        )\
-        l.listen()\
-    \}\
-\
-    private fun startRace() \{\
-        val race = RaceView(this)\
-        avatars.forEachIndexed \{ i, b -> race.racers[i].avatar = b \}\
-\
-        race.onFinished = \{ msg ->\
-            runOnUiThread \{\
-                meter.stop()\
-                page(\
-                    label(msg, 32f),\
-                    btn("\uc0\u55357 \u56577  \u20877 \u26469 \u19968 \u23616 ") \{ startRace() \},\
-                    btn("\uc0\u36820 \u22238 \u20027 \u33756 \u21333 ") \{ showMenu() \}\
-                )\
-            \}\
-        \}\
-\
-        meter.onDb = \{ db -> race.racers[0].db = db \}\
-        link?.onDb = \{ db -> race.racers[1].db = db \}\
-\
-        show(race)\
-        race.start()\
-        meter.start()\
-    \}\
-\
-    // ---------- \uc0\u40614 \u20811 \u39118 \u31471  ----------\
-\
-    @SuppressLint("MissingPermission")\
-    private fun companionFlow() \{\
-        val items = mutableListOf<View>(label("\uc0\u36873 \u25321 \u20027 \u26426 \u25163 \u26426 \u65288 \u38656 \u20808 \u22312 \u31995 \u32479 \u34013 \u29273 \u37324 \u37197 \u23545 \u65289 ", 18f))\
-        bt.bondedDevices.forEach \{ d ->\
-            items += btn(d.name ?: d.address) \{ connectTo(d) \}\
-        \}\
-        items += btn("\uc0\u36820 \u22238 ") \{ showMenu() \}\
-        page(*items.toTypedArray())\
-    \}\
-\
-    private fun connectTo(d: BluetoothDevice) \{\
-        val status = label("\uc0\u27491 \u22312 \u36830 \u25509  $\{d.name ?: d.address\}\'85")\
-        page(status)\
-        val l = BtLink(bt).also \{ link = it \}\
-        l.onStatus = \{ msg -> runOnUiThread \{ status.text = msg \} \}\
-        l.connect(d) \{ ok -> if (ok) runOnUiThread \{ micScreen(l) \} \}\
-    \}\
-\
-    private fun micScreen(l: BtLink) \{\
-        val level = label("\uc0\u55356 \u57252  \u27491 \u22312 \u37319 \u38598 \u22768 \u38899 \'85", 22f)\
-        page(\
-            level,\
-            label("\uc0\u35831 \u23545 \u30528 \u25163 \u26426 \u22823 \u22768 \u21898 \u65281 \u35831 \u20445 \u25345 \u23631 \u24149 \u20142 \u30528 ", 14f),\
-            btn("\uc0\u26029 \u24320 ") \{ l.close(); meter.stop(); showMenu() \}\
-        )\
-        meter.onDb = \{ db ->\
-            l.send(db)\
-            runOnUiThread \{ level.text = "%.0f dB".format(db) \}\
-        \}\
-        meter.start()\
-    \}\
-\}}
+import android.Manifest
+import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
+import android.graphics.Bitmap
+import android.graphics.Color
+import android.os.Bundle
+import android.view.Gravity
+import android.view.View
+import android.view.ViewGroup
+import android.view.WindowManager
+import android.widget.Button
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
+import kotlinx.coroutines.*
+
+class MainActivity : ComponentActivity() {
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val bt: BluetoothAdapter by lazy {
+        getSystemService(BluetoothManager::class.java).adapter
+    }
+    private val meter by lazy { AudioMeter(scope) }
+    private lateinit var root: FrameLayout
+    private var link: BtLink? = null
+    private val avatars = arrayOfNulls<Bitmap>(2)
+    private var photoIdx = 0
+
+    private val permLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { showMenu() }
+
+    private val camLauncher = registerForActivityResult(
+        ActivityResultContracts.TakePicturePreview()
+    ) { bmp ->
+        avatars[photoIdx] = bmp
+        photoIdx++
+        askPhoto()
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        root = FrameLayout(this).apply { setBackgroundColor(0xFF1B1F3B.toInt()) }
+        setContentView(root)
+        permLauncher.launch(
+            arrayOf(
+                Manifest.permission.RECORD_AUDIO,
+                Manifest.permission.CAMERA,
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_SCAN
+            )
+        )
+    }
+
+    override fun onDestroy() {
+        meter.stop()
+        link?.close()
+        scope.cancel()
+        super.onDestroy()
+    }
+
+    // ---------- 界面工具 ----------
+
+    private fun label(s: String, size: Float = 18f) = TextView(this).apply {
+        text = s
+        textSize = size
+        setTextColor(Color.WHITE)
+        gravity = Gravity.CENTER
+    }
+
+    private fun btn(s: String, onClick: () -> Unit) = Button(this).apply {
+        text = s
+        setOnClickListener { onClick() }
+    }
+
+    private fun show(v: View) {
+        root.removeAllViews()
+        root.addView(v, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+    }
+
+    private fun page(vararg views: View) {
+        val col = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(48, 32, 48, 32)
+        }
+        views.forEach {
+            col.addView(
+                it,
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { setMargins(0, 10, 0, 10) }
+            )
+        }
+        show(col)
+    }
+
+    // ---------- 菜单 ----------
+
+    private fun showMenu() {
+        link?.close()
+        link = null
+        meter.stop()
+        page(
+            label("🏁 声浪竞速", 30f),
+            label("大声喊，让你的头像冲过终点！", 16f),
+            btn("🎮 我是主机（屏幕 + 玩家1）") { hostFlow() },
+            btn("🎤 我是麦克风端（玩家2）") { companionFlow() }
+        )
+    }
+
+    // ---------- 主机 ----------
+
+    private fun hostFlow() {
+        avatars.fill(null)
+        photoIdx = 0
+        askPhoto()
+    }
+
+    private fun askPhoto() {
+        if (photoIdx >= 2) {
+            hostWait()
+            return
+        }
+        page(
+            label("拍摄玩家${photoIdx + 1}的头像", 20f),
+            btn("📷 拍照") { camLauncher.launch(null) },
+            btn("跳过（使用默认头像）") { photoIdx++; askPhoto() }
+        )
+    }
+
+    private fun hostWait() {
+        val status = label("等待玩家2的麦克风端连接…")
+        val l = BtLink(bt).also { link = it }
+        l.onStatus = { msg -> runOnUiThread { status.text = msg } }
+        page(
+            label("🎮 主机（玩家1 = 本机麦克风）", 20f),
+            status,
+            label("未连接玩家2时，玩家2的赛道保持静止", 14f),
+            btn("▶ 开始竞速") { startRace() },
+            btn("返回") { showMenu() }
+        )
+        l.listen()
+    }
+
+    private fun startRace() {
+        val race = RaceView(this)
+        avatars.forEachIndexed { i, b -> race.racers[i].avatar = b }
+
+        race.onFinished = { msg ->
+            runOnUiThread {
+                meter.stop()
+                page(
+                    label(msg, 32f),
+                    btn("🔁 再来一局") { startRace() },
+                    btn("返回主菜单") { showMenu() }
+                )
+            }
+        }
+
+        meter.onDb = { db -> race.racers[0].db = db }
+        link?.onDb = { db -> race.racers[1].db = db }
+
+        show(race)
+        race.start()
+        meter.start()
+    }
+
+    // ---------- 麦克风端 ----------
+
+    @SuppressLint("MissingPermission")
+    private fun companionFlow() {
+        val items = mutableListOf<View>(label("选择主机手机（需先在系统蓝牙里配对）", 18f))
+        bt.bondedDevices.forEach { d ->
+            items += btn(d.name ?: d.address) { connectTo(d) }
+        }
+        items += btn("返回") { showMenu() }
+        page(*items.toTypedArray())
+    }
+
+    private fun connectTo(d: BluetoothDevice) {
+        val status = label("正在连接 ${d.name ?: d.address}…")
+        page(status)
+        val l = BtLink(bt).also { link = it }
+        l.onStatus = { msg -> runOnUiThread { status.text = msg } }
+        l.connect(d) { ok -> if (ok) runOnUiThread { micScreen(l) } }
+    }
+
+    private fun micScreen(l: BtLink) {
+        val level = label("🎤 正在采集声音…", 22f)
+        page(
+            level,
+            label("请对着手机大声喊！请保持屏幕亮着", 14f),
+            btn("断开") { l.close(); meter.stop(); showMenu() }
+        )
+        meter.onDb = { db ->
+            l.send(db)
+            runOnUiThread { level.text = "%.0f dB".format(db) }
+        }
+        meter.start()
+    }
+}
