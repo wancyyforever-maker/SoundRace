@@ -1,38 +1,31 @@
-{\rtf1\ansi\ansicpg936\cocoartf2822
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
-{\colortbl;\red255\green255\blue255;}
-{\*\expandedcolortbl;;}
-\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+}
 
-\f0\fs24 \cf0 plugins \{\
-    id("com.android.application")\
-    id("org.jetbrains.kotlin.android")\
-\}\
-\
-android \{\
-    namespace = "com.example.soundrace"\
-    compileSdk = 34\
-\
-    defaultConfig \{\
-        applicationId = "com.example.soundrace"\
-        minSdk = 26\
-        targetSdk = 34\
-        versionCode = 1\
-        versionName = "1.0"\
-    \}\
-    buildTypes \{\
-        release \{ isMinifyEnabled = false \}\
-    \}\
-    compileOptions \{\
-        sourceCompatibility = JavaVersion.VERSION_17\
-        targetCompatibility = JavaVersion.VERSION_17\
-    \}\
-    kotlinOptions \{ jvmTarget = "17" \}\
-\}\
-\
-dependencies \{\
-    implementation("androidx.core:core-ktx:1.13.1")\
-    implementation("androidx.activity:activity-ktx:1.9.0")\
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")\
-\}}
+android {
+    namespace = "com.example.soundrace"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.example.soundrace"
+        minSdk = 26
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+    }
+    buildTypes {
+        release { isMinifyEnabled = false }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = "17" }
+}
+
+dependencies {
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.activity:activity-ktx:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+}
